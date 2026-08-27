@@ -73,6 +73,7 @@
     * [Inference Pipeline](user-guide/model-inference/inference-pipeline/README.md)
       * [Basic Inference Pipeline](user-guide/model-inference/inference-pipeline/basic-inference-pipeline.md)
     * [Inference Command](user-guide/model-inference/inference-command.md)
+    * [RTDBN Inference Command](user-guide/model-inference/rtdbn-inference-command.md)
   * [Pre-processing](user-guide/pre-processing/README.md)
     * [Collocation and Resampling](user-guide/pre-processing/collocation-and-resampling.md)
   * [Post-processing](user-guide/post-processing/README.md)
