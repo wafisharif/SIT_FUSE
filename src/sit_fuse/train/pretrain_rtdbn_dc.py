@@ -243,6 +243,37 @@ def _quality_check(model, train_ds, val_ds, test_ds, num_classes, num_workers):
           f"({'similar' if abs(km_sil - test_sil) < 0.05 else 'notable gap'})")
 
 
+def load_trained_rtdbn_dc(yml_conf):
+    """Loads a frozen RTDBN encoder + trained RTDBN_DC head for inference/FLOPs use.
+
+    Rebuilds RTDBN_DC with the same hyperparameters used at training time, then
+    loads the state_dict saved by train_RTDBN_DC's final torch.save() call (deep_cluster.ckpt
+    is a raw state_dict, not a PyTorch Lightning checkpoint, despite the ModelCheckpoint
+    callback also writing to that same path during training - the final manual save overwrites it).
+    """
+    out_dir = yml_conf["output"]["out_dir"]
+    encoder_dir = os.path.join(out_dir, "encoder")
+    full_model_dir = os.path.join(out_dir, "full_model")
+
+    rtdbn = _load_frozen_encoder(yml_conf, encoder_dir)
+
+    num_classes = yml_conf["cluster"]["num_classes"]
+    lr = yml_conf["cluster"]["training"]["learning_rate"]
+    noise_stdev = float(yml_conf["cluster"]["gauss_noise_stdev"][0])
+    lamb = float(yml_conf["cluster"]["lambda"])
+
+    model = RTDBN_DC(rtdbn, num_classes=num_classes, lr=lr, noise_stdev=noise_stdev, lamb=lamb)
+
+    ckpt_path = os.path.join(full_model_dir, "deep_cluster.ckpt")
+    model.load_state_dict(torch.load(ckpt_path, map_location="cpu"))
+
+    for param in model.parameters():
+        param.requires_grad = False
+    model.eval()
+
+    return model
+
+
 def run_dc_outside(yml_fpath):
     yml_conf = read_yaml(yml_fpath)
     train_RTDBN_DC(yml_conf)
