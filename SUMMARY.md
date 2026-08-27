@@ -24,6 +24,7 @@
           * [Encoder Training Config Options](user-guide/code-configuration/code-configuration/config-options/encoder-config-options/encoder-training-config-options/README.md)
             * [Training data Stratification Config Options](user-guide/code-configuration/code-configuration/config-options/encoder-config-options/encoder-training-config-options/training-data-stratification-config-options.md)
         * [DBN-Specific Config Options](user-guide/code-configuration/code-configuration/config-options/dbn-specific-config-options.md)
+        * [RTDBN-Specific Config Options](user-guide/code-configuration/code-configuration/config-options/rtdbn-specific-config-options.md)
         * [BYOL-Specific Config Options](user-guide/code-configuration/code-configuration/config-options/byol-specific-config-options.md)
         * [I-JEPA-Specific Training Options](user-guide/code-configuration/code-configuration/config-options/i-jepa-specific-training-options.md)
         * [Deep Clustering Config Options](user-guide/code-configuration/code-configuration/config-options/deep-clustering-config-options/README.md)
