@@ -15,6 +15,10 @@ dependencies = [
     # not by letting this float.
     "myosuite==2.12.2",
     "gymnasium==1.2.3",
+    "timeshap>=1.0.4",
+    # Pinned <=0.42.1: newer shap renamed a private class timeshap depends on
+    # (feedzai/timeshap #48/#56, unresolved as of Aug 2026).
+    "shap<=0.42.1",
 ]
 
 
