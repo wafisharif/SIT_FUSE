@@ -1,0 +1,85 @@
+matching:
+  # 0 means require the SIT-FUSE time to fall within the truth interval.
+  # Use a small nonzero value only to handle endpoint or product-timing gaps.
+  max_time_difference_seconds: 1800
+
+  # If false, one time-sliced HMS raster can be matched only once.
+  # For supervision, true is normally appropriate because multiple TEMPO/GOES
+  # acquisitions may legitimately use the same valid HMS polygon interval.
+  allow_hms_reuse: true
+
+  # Permit closest truth interval only when SIT-FUSE time is not contained
+  # by any available interval.
+  allow_nearest_interval: true
+
+  # Strong default: group observations sharing the same truth interval.
+  group_by: hms_interval
+
+hms:
+  directory: "/home/nlahaye/SIT_FUSE/src/sit_fuse/preprocessing/data_pull/hms_out/rasters/"
+
+  patterns:
+    smoke:
+      - "(?i)smoke"
+    fire:
+      - "(?i)fire"
+
+    interval_timestamp_patterns:
+      - "(?i)(\\d{8}T\\d{6}Z)_(\\d{8}T\\d{6}Z)"
+
+
+
+
+time_range:
+  start: "2024-07-20T00:00:00Z"
+  end: "2024-07-31T23:59:59Z"
+
+sit_fuse:
+  directory: "/data/nlahaye/output/Learnergy/SF_TEMPO_PARK/"
+
+  # Retain only context-free outputs. Tune these to your actual naming convention.
+  context_free_filters:
+    include_patterns:
+      - "full_geo"
+    exclude_patterns:
+      - "proba"
+      - "no_geo"
+      - "no_heir"
+
+  # SIT-FUSE filenames must contain smoke/fire and a timestamp.
+  patterns:
+    smoke:
+      - "full_geo"
+    fire:
+      - "full_geo"
+
+
+
+
+    # Capture group 1 must be a full timestamp.
+    timestamp_patterns:
+      - "(\\d{8}T\\d{6}Z)"
+      - "(\\d{8}T\\d{6})"
+
+    # Used only if some SIT-FUSE files are daily products.
+    daily_date_patterns:
+      - "(\\d{8})"
+
+  daily_time_policy: "start_of_day"
+
+
+classifier_config:
+  # Existing classifier config carrying your feature-construction settings
+  # expected by build_training_dataset() in sit_fuse_utils_multiscale_final.py.
+  base_yaml: "/home/nlahaye/SIT_FUSE/src/sit_fuse/train/basic_clssifier.yaml"
+
+output:
+  classifier_yaml: "//data/nlahaye/experiments/basic_clssifier.yaml"
+  audit_csv: "/data/nlahaye/experiments/hms_context_free/matchup_audit.csv"
+
+  # Destination key written into the generated config.
+  #
+  # Change this after checking build_training_dataset() if it expects,
+  # for example, "data.samples", "training_pairs", or "file_pairs".
+  matchup_key: "matchups"
+
