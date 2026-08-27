@@ -1,5 +1,7 @@
 # RTDBN-Specific Config Options
 
+RTDBN is currently train-only.
+
 {% code fullWidth="true" %}
 ```
 model_type: A list of RTRBM types to be used (strings - one for each RTRBM layer in the RTDBN).
