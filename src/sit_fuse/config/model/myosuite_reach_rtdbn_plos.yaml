@@ -31,7 +31,7 @@ encoder:
     warmup_epochs: 15
     batch_size: 32
     epochs: [30]
-    accelerator: "cpu" # change to "gpu" if available
+    accelerator: "gpu"
     devices: 1
     gradient_clip_val: 1.0
     precision: "32"
@@ -44,7 +44,7 @@ cluster:
     learning_rate: 0.001
     batch_size: 32
     epochs: 30
-    accelerator: "cpu"
+    accelerator: "gpu"
     devices: 1
     gradient_clip_val: 1.0
     precision: "32"
