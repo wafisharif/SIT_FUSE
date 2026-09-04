@@ -116,11 +116,16 @@ def train_RTDBN_DC(yml_conf):
         save_on_train_epoch_end=False,
     )
 
+    # See pretrain_rtdbn.py's matching comment: DDPStrategy defaults to the
+    # NCCL backend on GPU, unavailable on Windows and unnecessary here since
+    # every config uses devices=1.
+    strategy = DDPStrategy(find_unused_parameters=True) if devices > 1 else "auto"
+
     trainer = pl.Trainer(
         default_root_dir=save_dir,
         accelerator=accelerator,
         devices=devices,
-        strategy=DDPStrategy(find_unused_parameters=True),
+        strategy=strategy,
         precision=precision,
         max_epochs=max_epochs,
         callbacks=[lr_monitor, model_summary, checkpoint_callback],

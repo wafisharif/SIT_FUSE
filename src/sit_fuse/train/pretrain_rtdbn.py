@@ -113,12 +113,21 @@ def pretrain_RTDBN(yml_conf):
             save_on_train_epoch_end=False
         )
 
+        # DDPStrategy is only needed for devices > 1: it defaults to the NCCL
+        # backend on GPU, which isn't available in Windows PyTorch builds at
+        # all, so it crashes single-device Windows GPU runs outright. Every
+        # config in this pipeline uses devices=1, where DDP's
+        # find_unused_parameters flag (needed because sigma's requires_grad
+        # toggles mid-training) isn't relevant either -- plain single-process
+        # autograd just skips params with no grad_fn, no DDP bookkeeping
+        # required. "auto" resolves to a single-device strategy in that case.
+        strategy = DDPStrategy(find_unused_parameters=True) if devices > 1 else "auto"
+
         trainer = pl.Trainer(
             default_root_dir=save_dir,
             accelerator=accelerator,
             devices=devices,
-            # find_unused_parameters=True: sigma's requires_grad toggles mid-training.
-            strategy=DDPStrategy(find_unused_parameters=True),
+            strategy=strategy,
             precision=precision,
             max_epochs=max_epochs,
             callbacks=[lr_monitor, model_summary, checkpoint_callback],
