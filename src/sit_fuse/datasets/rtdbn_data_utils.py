@@ -5,7 +5,7 @@ import os
 import numpy as np
 import torch
 from joblib import dump, load
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from sit_fuse.datasets.sf_temporal_dataset import SFTemporalDataset
 
@@ -42,9 +42,21 @@ def split_episode_files(data_dir, val_percent, test_percent=0.0, seed=42):
     return train_files, val_files, test_files
 
 
-def fit_and_save_scaler(train_files, scaler_out_path=None):
-    """Fits a MinMaxScaler on train files only, and persists it if a path is given."""
-    scaler = MinMaxScaler()
+def fit_and_save_scaler(train_files, scaler_out_path=None, model_type="variance_gaussian"):
+    """Fits a scaler on train files only, and persists it if a path is given.
+
+    RTVarianceGaussianRBM's learned per-feature sigma needs zero-mean/unit-
+    variance input to actually differentiate across channels -- MinMax-to-
+    [0,1] left sigma converging to a near-uniform band regardless of true
+    per-channel variance, which tanked R^2 despite a good-looking MSE (see
+    SIT-FUSE-RTRBM's notes/MSE_VS_R2_MODEL_COMPARISON.md and
+    notes/STANDARDSCALER_FIX_RESOLUTION.md, task #70). Every RTDBN config in
+    this pipeline trains "variance_gaussian" as its first (and currently
+    only) layer, so this defaults to StandardScaler; Bernoulli/fixed-variance
+    Gaussian layers, if ever configured here, still want MinMax.
+    """
+    scaler_cls = StandardScaler if model_type == "variance_gaussian" else MinMaxScaler
+    scaler = scaler_cls()
     for fpath in train_files:
         scaler.partial_fit(np.load(fpath).astype(np.float32))
 
@@ -92,10 +104,17 @@ def build_rtdbn_splits(yml_conf, scaler_out_path=None, scaler_in_path=None):
         data_dir, val_percent, test_percent, seed=seed
     )
 
+    # First layer's model type determines the scaler convention (see
+    # fit_and_save_scaler's docstring); later stacked layers, if any, train
+    # on the first layer's hidden output, not this raw-data scaler.
+    model_type = yml_conf.get("rtdbn", {}).get("model_type", ["variance_gaussian"])[0]
+
     if scaler_in_path is not None:
         scaler = load_scaler(scaler_in_path)
     else:
-        scaler = fit_and_save_scaler(train_files, scaler_out_path=scaler_out_path)
+        scaler = fit_and_save_scaler(
+            train_files, scaler_out_path=scaler_out_path, model_type=model_type
+        )
 
     train_ds = build_temporal_dataset(
         train_files, scaler, seq_len, fill_value, do_shuffle=True

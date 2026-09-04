@@ -33,7 +33,6 @@ class RTDBN_PL(pl.LightningModule):
         self.nesterov_accel = nesterov_accel
         self.decay = decay
         self.warmup_epochs = warmup_epochs
-        self._epoch_count = 0
 
         self.register_module("current_rbm", self.model)
         if self.previous_layers is not None:
@@ -126,11 +125,17 @@ class RTDBN_PL(pl.LightningModule):
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         return self(batch)
 
-    def on_train_epoch_end(self):
-        self._epoch_count += 1
-        if self._epoch_count == self.warmup_epochs:
-            if hasattr(self.model, 'sigma'):
-                self.model.sigma.requires_grad_(True)
+    def on_train_epoch_start(self):
+        # Re-applied at the start of every epoch (idempotent) rather than
+        # toggled once via a hand-rolled counter. self.current_epoch is
+        # Lightning's own trainer-managed epoch index, correctly restored
+        # by trainer.fit(..., ckpt_path=...) before the training loop
+        # resumes -- so this is self-healing across a resume, unlike a
+        # plain Python counter (which isn't part of any checkpoint state)
+        # or configure_optimizers' unconditional freeze (which re-runs,
+        # and would otherwise re-freeze sigma even after warmup on resume).
+        if hasattr(self.model, 'sigma'):
+            self.model.sigma.requires_grad_(self.current_epoch >= self.warmup_epochs)
 
     def on_train_batch_end(self, outputs, batch, batch_idx):
         # Sigma clamp: this class runs its own loop, not fit_subseries.
@@ -144,6 +149,10 @@ class RTDBN_PL(pl.LightningModule):
             self.save_dir, "rtdbn.ckpt"))
 
     def configure_optimizers(self):
+        # Sets the initial (pre-warmup) frozen state; on_train_epoch_start
+        # is what's actually authoritative once training begins (it
+        # re-applies the correct state every epoch based on
+        # self.current_epoch, so it self-corrects on a resumed run too).
         if hasattr(self.model, 'sigma'):
             self.model.sigma.requires_grad_(False)
         # Pass all parameters -- optimizer snapshots param_groups at
