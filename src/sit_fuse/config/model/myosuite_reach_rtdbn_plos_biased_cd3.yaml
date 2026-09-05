@@ -30,7 +30,12 @@ encoder:
     warmup_epochs: 15
     batch_size: 32
     epochs: [30]
-    accelerator: "gpu"
+    # CPU: measured ~4x faster than GPU for this encoder's per-timestep
+    # gibbs-sampling loop on Windows (WDDM per-kernel-launch overhead
+    # dominates for many small sequential ops). See plos_biased.yaml.
+    # gibbs_steps=3 here means even more small ops per timestep than the
+    # base config, so this should matter at least as much.
+    accelerator: "cpu"
     devices: 1
     gradient_clip_val: 1.0
     precision: "32"

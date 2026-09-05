@@ -31,7 +31,12 @@ encoder:
     warmup_epochs: 15
     batch_size: 32
     epochs: [30]
-    accelerator: "gpu"
+    # CPU, not GPU: this stage's per-timestep gibbs-sampling loop fires many
+    # small sequential CUDA kernels, which Windows' WDDM driver model adds
+    # heavy per-launch overhead to -- measured ~4x slower on this machine's
+    # GPU (2.69 it/s) than CPU (11.42 it/s). The clustering stage below is a
+    # single forward pass per batch, no such loop, and GPU is fine there.
+    accelerator: "cpu"
     devices: 1
     gradient_clip_val: 1.0
     precision: "32"
